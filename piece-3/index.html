@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Millions and Millions</title>
+<link rel="stylesheet" href="../css/gate.css">
+<link rel="stylesheet" href="../css/style.css?v=4">
+</head>
+<body>
+
+<div id="password-gate">
+  <form id="password-form" autocomplete="off">
+    <input type="password" id="password-input" placeholder="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </form>
+</div>
+<script src="../js/gate.js"></script>
+
+<a class="corner-btn back-link" href="../index.html" aria-label="Back to home">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</a>
+
+<button class="corner-btn fullscreen-btn" id="fullscreen-btn" type="button" aria-label="Toggle fullscreen"></button>
+
+<div id="loader">
+  <div id="loader-bar"><div id="loader-fill"></div></div>
+  <div id="loader-label">loading 0%</div>
+</div>
+
+<div id="scroll-container">
+  <section id="scroll-stage">
+    <div id="pin">
+      <canvas id="frame-canvas"></canvas>
+      <div id="scroll-hint" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3 L12 14 M7 11 L12 16 L17 11" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="../js/script.js?v=4"></script>
+</body>
+</html>

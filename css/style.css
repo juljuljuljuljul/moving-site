@@ -1,0 +1,205 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: #000;
+  width: 100%;
+}
+
+#scroll-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Below 768px: the outer page is locked and can't scroll at all, so
+   Safari's toolbar has no scroll to react to and never auto-hides —
+   #scroll-container becomes its own internal scroller instead. */
+@media (max-width: 767px) {
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #scroll-container {
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* 768px and up: desktop browsers don't have a dynamic toolbar to worry
+   about, so it's simplest to just let the page scroll normally. */
+@media (min-width: 768px) {
+  #scroll-container {
+    overflow: visible;
+    height: auto;
+  }
+}
+
+#scroll-stage {
+  position: relative;
+  width: 100%;
+  /* height is set by JS once the frame count is known */
+}
+
+#pin {
+  position: sticky;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* keeps iOS Safari from clipping under the URL bar */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#frame-canvas {
+  display: block;
+  /* Intrinsic width/height attributes (set in JS) define the aspect ratio.
+     max-width/max-height + auto scale it uniformly to fit the pin box,
+     like object-fit: contain — never stretched, no distortion when the
+     browser's toolbar shows/hides and the pin's dvh height changes. */
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  transition: opacity 0.5s ease;
+}
+
+#loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#loader-bar {
+  width: min(60vw, 260px);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#loader-fill {
+  height: 100%;
+  width: 0%;
+  background: #fff;
+  transition: width 0.15s ease;
+}
+
+#loader-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.corner-btn {
+  position: fixed;
+  top: max(18px, env(safe-area-inset-top));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  /* Slow fade back to dim (this duration); :hover below overrides with a
+     quicker one for brightening in. */
+  transition: color 1.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.corner-btn svg {
+  width: 19px;
+  height: 19px;
+  display: block;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .corner-btn:hover {
+    color: #fff;
+    transition: color 0.6s ease;
+  }
+}
+
+.corner-btn:focus-visible {
+  color: #fff;
+  outline: none;
+}
+
+.back-link {
+  left: max(18px, env(safe-area-inset-left));
+}
+
+@media (max-width: 767px) {
+  .back-link {
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.fullscreen-btn {
+  right: max(18px, env(safe-area-inset-right));
+  display: none; /* desktop only */
+}
+
+@media (min-width: 768px) {
+  .fullscreen-btn {
+    display: flex;
+  }
+}
+
+/* Scroll hint: a small, elegant, gently bobbing "scroll down" cue. Hidden
+   until the loader clears (JS adds .visible), and fades away permanently
+   the first time the user actually scrolls (JS adds .gone). */
+#scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  transform: translateX(-50%);
+  z-index: 5;
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.4s ease;
+}
+
+#scroll-hint.visible {
+  opacity: 1;
+  animation: scroll-hint-bob 2.8s ease-in-out infinite;
+}
+
+#scroll-hint.gone {
+  opacity: 0;
+  animation: none;
+  transition: opacity 1s ease;
+}
+
+#scroll-hint svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+@keyframes scroll-hint-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(7px); }
+}

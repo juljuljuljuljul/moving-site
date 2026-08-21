@@ -1,0 +1,7 @@
+.DS_Store
+
+# Raw/unprocessed source frames — not needed to serve the site, and large.
+# The actual per-piece frames used by the site live in piece-*/images/.
+new mobile/
+images for sequence 2/
+images for sequence 3/

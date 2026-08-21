@@ -1,0 +1,58 @@
+#password-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease;
+}
+
+#password-gate.unlocked {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#password-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#password-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 8px 4px;
+  width: 200px;
+  outline: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  transition: border-color 1s ease;
+}
+
+#password-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 12px;
+}
+
+#password-input:focus {
+  border-bottom-color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes password-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+#password-input.shake {
+  animation: password-shake 0.4s ease;
+  border-bottom-color: rgba(255, 120, 120, 0.7);
+}

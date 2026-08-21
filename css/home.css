@@ -1,0 +1,97 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: #000;
+  width: 100%;
+  height: 100%;
+}
+
+#home {
+  position: relative; /* anchors #glow-backdrop */
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(32px, 6vw, 64px);
+  padding: 32px;
+}
+
+/* Mobile: stacked vertically, matching the sketch */
+@media (max-width: 767px) {
+  #home {
+    flex-direction: column;
+  }
+}
+
+/* Desktop: laid out in a row */
+@media (min-width: 768px) {
+  #home {
+    flex-direction: row;
+  }
+}
+
+.thumb-link {
+  --thumb-size: clamp(140px, 32vw, 220px);
+  position: relative;
+  z-index: 1;
+  display: block;
+  text-decoration: none;
+  cursor: default;
+  pointer-events: none; /* enabled by JS once that piece's frames exist */
+  opacity: 0.35;
+  transition: opacity 0.4s ease;
+}
+
+@media (min-width: 768px) {
+  .thumb-link {
+    --thumb-size: clamp(180px, 16vw, 280px);
+  }
+}
+
+.thumb-link.ready {
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.thumb-link.ready:focus-visible .thumb {
+  transform: scale(1.03);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .thumb-link.ready:hover .thumb {
+    transform: scale(1.03);
+    transition: transform 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+}
+
+.thumb {
+  display: block;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  /* Slow, delicate settle back to resting size — this (longer) duration is
+     what's used when the pointer leaves; the :hover rule above overrides it
+     with a shorter one for growing into the hover state. */
+  transition: transform 2.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  /* Glow recipe from Figma: a large blur paired with a negative spread —
+     the spread shrinks the shadow's shape inward before the blur softens
+     it, so there's no hard-edged core, just a soft bloom outward. */
+  box-shadow: 0 0 153.312px -20.944px rgba(129, 255, 179, 0.6);
+  transition: box-shadow 1.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .thumb-link.ready:hover .thumb-img {
+    box-shadow: 0 0 175px -14px rgba(129, 255, 179, 0.75);
+    transition: box-shadow 0.7s ease;
+  }
+}
