@@ -41,20 +41,31 @@
     loaderLabel.textContent = `loading ${pct}%`;
   }
 
+  // Resolves once the image is downloaded. We also kick off an async
+  // decode() to pre-warm the browser's decode cache — that's what keeps
+  // the very first scrub from hitching, since an undecoded frame forces a
+  // synchronous main-thread decode on its first drawImage(). The decode is
+  // deliberately NOT awaited: on a backgrounded/unfocused tab decode()
+  // never settles, and awaiting it there would wedge the loader at 0%.
   function loadImage(src) {
     return new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.decoding = 'async';
       img.onerror = () => resolve(null);
+      img.onload = () => {
+        if (img.decode) img.decode().catch(() => {});
+        resolve(img);
+      };
       img.src = src;
     });
   }
 
-  // Loads a sequence progressively: geometry (frame count / scroll length)
-  // is known immediately from the manifest, frames load in priority order
-  // starting from 0, and this resolves as soon as a small first chunk is
-  // ready — the rest keeps loading in the background so scrolling isn't
-  // blocked on the full set, regardless of how fast the host serves files.
+  // Loads the WHOLE sequence before scrolling is revealed. The manifest
+  // gives geometry (frame count / scroll length) immediately; frames then
+  // download+decode in priority order from 0, and this resolves only once
+  // every frame is in hand. The user explicitly wants the first play to be
+  // perfect, so the loader stays up for the full set rather than releasing
+  // early and letting the scrub fall back to stale stand-in frames.
   async function loadAllProgressively(folder, files, token) {
     frameCount = files.length;
     images = new Array(frameCount).fill(null);
@@ -66,12 +77,10 @@
       return;
     }
 
-    const READY_COUNT = Math.min(frameCount, Math.max(20, Math.ceil(frameCount * 0.06)));
     let nextIndex = 0;
     let loadedCount = 0;
-    let readyResolved = false;
-    let resolveReady;
-    const readyPromise = new Promise((resolve) => { resolveReady = resolve; });
+    let resolveDone;
+    const donePromise = new Promise((resolve) => { resolveDone = resolve; });
 
     async function worker() {
       while (nextIndex < files.length) {
@@ -87,19 +96,19 @@
         }
         loadedCount++;
         setLoaderProgress(loadedCount, files.length);
-        onScroll(); // repaint if the currently-viewed frame just became available
 
-        if (!readyResolved && loadedCount >= READY_COUNT) {
-          readyResolved = true;
-          resolveReady();
-        }
+        // Paint frame 0 as soon as it exists so the correct first frame is
+        // already sitting behind the loader when it fades out.
+        if (i === 0 && img) onScroll();
+
+        if (loadedCount >= files.length) resolveDone();
       }
     }
 
-    const CONCURRENCY = Math.min(10, files.length);
+    const CONCURRENCY = Math.min(8, files.length);
     for (let w = 0; w < CONCURRENCY; w++) worker();
 
-    await readyPromise;
+    await donePromise;
   }
 
   function setCanvasIntrinsicSize(img) {
@@ -161,6 +170,9 @@
     stage.style.height = `${getViewportHeight() + scrollDistance}px`;
   }
 
+  let rafPending = false;
+  let pendingFrame = 0;
+
   function onScroll() {
     const scrolled = Math.min(Math.max(getScrolledPx(), 0), scrollDistance);
 
@@ -173,8 +185,17 @@
     }
 
     const progress = scrollDistance > 0 ? scrolled / scrollDistance : 0;
-    const frame = Math.round(progress * (frameCount - 1));
-    requestAnimationFrame(() => drawFrame(frame));
+    pendingFrame = Math.round(progress * (frameCount - 1));
+
+    // Coalesce: many scroll events can fire between two animation frames —
+    // only ever paint the most recent target, once per frame.
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        drawFrame(pendingFrame);
+      });
+    }
   }
 
   async function init(targetMode) {
