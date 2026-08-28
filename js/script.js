@@ -41,21 +41,19 @@
     loaderLabel.textContent = `loading ${pct}%`;
   }
 
-  // Resolves once the image is downloaded. We also kick off an async
-  // decode() to pre-warm the browser's decode cache — that's what keeps
-  // the very first scrub from hitching, since an undecoded frame forces a
-  // synchronous main-thread decode on its first drawImage(). The decode is
-  // deliberately NOT awaited: on a backgrounded/unfocused tab decode()
-  // never settles, and awaiting it there would wedge the loader at 0%.
+  // Resolves once the image is downloaded. We deliberately DON'T call
+  // img.decode() here: doing it on every frame forces the browser to hold
+  // a decoded bitmap for the whole sequence at once (~8 MB each at
+  // 1080x1920), which on a phone is gigabytes and makes iOS Safari kill
+  // and reload the tab. drawFrame() decodes lazily instead, and
+  // warmDecodeWindow() keeps just a small band around the current frame
+  // hot so scrubbing stays smooth without the memory blow-up.
   function loadImage(src) {
     return new Promise((resolve) => {
       const img = new Image();
       img.decoding = 'async';
       img.onerror = () => resolve(null);
-      img.onload = () => {
-        if (img.decode) img.decode().catch(() => {});
-        resolve(img);
-      };
+      img.onload = () => resolve(img);
       img.src = src;
     });
   }
@@ -148,6 +146,27 @@
     currentFrame = index;
     currentSource = source;
     paint(img);
+    warmDecodeWindow(index);
+  }
+
+  // Keep a small band of frames around the current one decoded so an
+  // in-progress scrub doesn't stall on a first-touch decode, while never
+  // asking the browser to hold more than ~a few dozen decoded bitmaps at
+  // once (the whole-sequence version of this is what was OOM-killing the
+  // tab on phones).
+  const DECODE_AHEAD = 12;
+  const DECODE_BEHIND = 4;
+  let lastWarmCenter = -999;
+
+  function warmDecodeWindow(center) {
+    if (Math.abs(center - lastWarmCenter) < 3) return; // don't re-scan on tiny moves
+    lastWarmCenter = center;
+    const lo = Math.max(0, center - DECODE_BEHIND);
+    const hi = Math.min(frameCount - 1, center + DECODE_AHEAD);
+    for (let i = lo; i <= hi; i++) {
+      const im = images[i];
+      if (im && im.decode) im.decode().catch(() => {});
+    }
   }
 
   // Below the mobile breakpoint, #scroll-container is its own locked-down
